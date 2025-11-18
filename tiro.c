@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
 #include "funciones.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 int main(int argc, char *argv[]) {
     if (argc != 10) return 1;
@@ -21,30 +24,28 @@ int main(int argc, char *argv[]) {
 
     double *Y = malloc(N * sizeof(double));
     int *hist = calloc(Nbins, sizeof(int));
-
-    double sum = 0;
-    double min = 1e9, max = -1e9;
+    if (!Y || !hist) return 1;
 
     for (long i = 0; i < N; i++) {
-        double r = drand48();
-        double q = drand48();
-        double R = sqrt(-2.0 * log(r));
-
-        double v_i = v0 + dv0 * R * cos(2 * M_PI * q);
-        double theta_i = theta0 + dtheta * R * sin(2 * M_PI * q);
-
+        double v_i = normal(v0, dv0);
+        double theta_i = normal(theta0, dtheta);
         Y[i] = yf(y0, x, v_i, theta_i);
-        sum += Y[i];
-        if (Y[i] < min) min = Y[i];
-        if (Y[i] > max) max = Y[i];
     }
 
+    double sum = 0;
+    for (long i = 0; i < N; i++) sum += Y[i];
     double mean = sum / N;
 
     double var = 0;
     for (long i = 0; i < N; i++) var += (Y[i] - mean) * (Y[i] - mean);
     var /= N;
     double std = sqrt(var);
+
+    double min = Y[0], max = Y[0];
+    for (long i = 1; i < N; i++) {
+        if (Y[i] < min) min = Y[i];
+        if (Y[i] > max) max = Y[i];
+    }
 
     double binw = (max - min) / Nbins;
 
@@ -56,14 +57,16 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < Nbins; i++) {
         double a = min + i * binw;
-        double b = min + (i + 1) * binw;
-        printf("%.4f %.4f %d\n", a, b, hist[i]);
+        double b = a + binw;
+        printf("%.5f %.5f %d\n", a, b, hist[i]);
     }
 
-    printf("MEDIA %.6f\n", mean);
-    printf("STD %.6f\n", std);
+    printf("Media %.6f\n", mean);
+    printf("Desviacion %.6f\n", std);
 
     free(Y);
     free(hist);
     return 0;
 }
+
+
